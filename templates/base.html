@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f5f0">
+  <title>{% block title %}White Petals Business Development{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v=2) }}">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="{{ url_for('index') }}">
+        <span class="brand-mark">WP</span>
+        <span class="brand-copy">White Petals<small>RESORT · BUSINESS GROWTH</small></span>
+      </a>
+      <div class="nav-caption">WORKSPACE</div>
+      <nav aria-label="Main navigation">
+        <a class="{% if request.endpoint == 'index' %}active{% endif %}" href="{{ url_for('index') }}"><span class="nav-icon">◫</span>Overview & Leads</a>
+        <a class="{% if request.endpoint == 'research_queue' %}active{% endif %}" href="{{ url_for('research_queue') }}"><span class="nav-icon">⌕</span>Research</a>
+        <a class="{% if request.endpoint in ['ai_assistant', 'assign_business_agent_task', 'create_business_agent'] %}active{% endif %}" href="{{ url_for('ai_assistant') }}"><span class="nav-icon">✳</span>AI agent studio<span class="nav-tag">AI</span></a>
+        <a class="{% if request.endpoint == 'sales_assistant' %}active{% endif %}" href="{{ url_for('sales_assistant') }}"><span class="nav-icon">↗</span>Sales assistant</a>
+        <a class="{% if request.endpoint in ['drafts', 'update_draft_status'] %}active{% endif %}" href="{{ url_for('drafts') }}"><span class="nav-icon">▤</span>Drafts</a>
+        <a class="{% if request.endpoint in ['follow_ups', 'update_follow_up'] %}active{% endif %}" href="{{ url_for('follow_ups') }}"><span class="nav-icon">◷</span>Follow-ups</a>
+        <a class="{% if request.endpoint == 'bookings' %}active{% endif %}" href="{{ url_for('bookings') }}"><span class="nav-icon">▥</span>Pipeline</a>
+        <a class="{% if request.endpoint in ['reports', 'run_report_now'] %}active{% endif %}" href="{{ url_for('reports') }}"><span class="nav-icon">⌁</span>Reports</a>
+      </nav>
+      <div class="sidebar-bottom">
+        <a class="{% if request.endpoint == 'integrations' %}active{% endif %}" href="{{ url_for('integrations') }}"><span class="nav-icon">⚙</span>Setup & backups</a>
+        <div class="workspace-status"><span class="status-dot"></span><span>Local workspace<small>Your data stays on this device</small></span></div>
+        {% if auth_enabled and authenticated %}
+        <form method="post" action="{{ url_for('logout') }}" class="nav-logout">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button class="link-button" type="submit">↪ &nbsp; Sign out</button>
+        </form>
+        {% endif %}
+      </div>
+    </aside>
+    <div class="main-column">
+      <header class="topbar">
+        <div class="mobile-brand"><span class="brand-mark">WP</span><strong>White Petals</strong></div>
+        <div class="breadcrumb">BUSINESS DEVELOPMENT <span>/</span> {{ request.endpoint|replace('_', ' ')|default('workspace', true)|title }}</div>
+        <div class="topbar-status"><span class="status-dot"></span> LOCAL CRM</div>
+      </header>
+      <main class="page">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+          <section class="flash-list" aria-live="polite">
+            {% for category, message in messages %}<div class="flash {{ category }}">{{ message }}</div>{% endfor %}
+          </section>
+          {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+        <footer><span>WHITE PETALS · BUSINESS DEVELOPMENT</span><span>Verify public information · Messages are never sent automatically</span></footer>
+      </main>
+    </div>
+  </div>
+</body>
+</html>

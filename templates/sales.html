@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Sales assistant · White Petals{% endblock %}
+{% block content %}
+<div class="page-heading"><div><p class="eyebrow">SALES ASSISTANT · REVIEW REQUIRED</p><h1>Prepare an outreach draft</h1><p>Choose a deterministic template or, if configured, an AI-assisted Gemini draft. Nothing is sent automatically.</p></div></div>
+<section class="panel narrow">
+  <form method="post" class="stack">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label>Company<select name="company_id" required><option value="">Select a lead</option>{% for lead in leads %}<option value="{{ lead.id }}">{{ lead.company_name }}{% if lead.contact_person %} · {{ lead.contact_person }}{% endif %}</option>{% endfor %}</select></label>
+    <label>Channel<select name="channel"><option>Email</option><option>WhatsApp</option></select></label>
+    <label>Optional purpose / subject<input name="purpose" maxlength="300" placeholder="e.g. Discuss a company team outing"></label>
+    <fieldset class="category-options">
+      <legend>Draft method</legend>
+      <label class="category-choice"><input type="radio" name="draft_mode" value="template" checked> Standard template</label>
+      {% if gemini_configured %}
+      <label class="category-choice"><input type="radio" name="draft_mode" value="gemini"> Gemini AI draft</label>
+      {% endif %}
+    </fieldset>
+    {% if gemini_configured %}<p class="muted">If selected, the company name, category, industry, city/state, sales stage, requested purpose, and configured resort facts are sent to Google Gemini for drafting. Lead contact details and CRM notes are not sent. Review the result, verify every claim, and check company policy before sharing.</p>
+    {% else %}<p class="muted">To enable Gemini drafts, set GEMINI_API_KEY in your local <code>.env</code> file and restart the app. Never paste API keys into this page or chat.</p>{% endif %}
+    <button type="submit">Create review draft</button>
+  </form>
+  <div class="notice"><strong>Before sending:</strong> confirm official package prices, taxes, meals, facilities, availability, guest capacity, terms, and resort contact details. Draft wording does not verify these facts.</div>
+</section>
+{% endblock %}

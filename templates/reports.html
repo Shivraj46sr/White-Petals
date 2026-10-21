@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Daily reports · White Petals{% endblock %}
+{% block content %}
+<div class="page-heading"><div><p class="eyebrow">ASIA/KOLKATA · {{ metrics.report_date }}</p><h1>Daily report</h1><p>Current CRM totals and activity recorded today. Existing leads without a recorded added date are excluded from new leads.</p></div><form method="post" action="{{ url_for('run_report_now') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button type="submit">Run report now</button></form></div>
+<section class="cards">
+{% for key, label in [('new_leads_discovered','New leads today'),('companies_researched','Companies researched today'),('qualified_leads','Qualified leads'),('drafts_prepared','Drafts prepared today'),('messages_sent','Messages actually sent'),('replies_received','Replies received'),('follow_ups_due','Follow-ups due'),('enquiries_received','Enquiries'),('proposals_sent','Proposals sent'),('site_visits_scheduled','Site visits'),('confirmed_bookings','Confirmed bookings'),('outstanding_tasks','Outstanding tasks'),('errors_requiring_attention','Job errors')] %}
+<article class="metric"><span>{{ label }}</span><strong>{{ metrics[key] }}</strong></article>
+{% endfor %}
+<article class="metric"><span>Confirmed booking value</span><strong>₹{{ "%.2f"|format(metrics.confirmed_booking_value or 0) }}</strong><small>Not estimated pipeline value</small></article>
+</section>
+<section class="panel"><h2>Saved reports</h2><div class="table-wrap"><table><thead><tr><th>Date</th><th>Saved</th><th>Confirmed bookings</th><th>Confirmed value</th><th>Follow-ups due</th></tr></thead><tbody>{% for row in history %}{% set data = row.data_json|from_json %}<tr><td>{{ row.report_date }}</td><td>{{ row.created_at }}</td><td>{{ data.confirmed_bookings }}</td><td>₹{{ "%.2f"|format(data.confirmed_booking_value) }}</td><td>{{ data.follow_ups_due }}</td></tr>{% else %}<tr><td colspan="5">No saved reports yet. Use Run report now or wait for the scheduled run.</td></tr>{% endfor %}</tbody></table></div></section>
+<section class="panel"><h2>Automation run history</h2><div class="table-wrap"><table><thead><tr><th>Job</th><th>Status</th><th>Summary</th><th>Started</th></tr></thead><tbody>{% for job in jobs %}<tr><td>{{ job.job_name }}</td><td>{{ job.status }}</td><td>{{ job.summary }}</td><td>{{ job.started_at }}</td></tr>{% else %}<tr><td colspan="4">No automation runs recorded.</td></tr>{% endfor %}</tbody></table></div><p class="muted">Scheduled automation currently refreshes metrics only. It does not search external sources, research leads, or contact prospects.</p></section>
+{% endblock %}

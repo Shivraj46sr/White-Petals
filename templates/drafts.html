@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Outreach drafts · White Petals{% endblock %}
+{% block content %}
+<div class="page-heading"><div><p class="eyebrow">REVIEW BEFORE USE</p><h1>Outreach drafts</h1><p>Prepared messages are saved for review. There is no send action in this demo.</p></div><a class="button" href="{{ url_for('sales_assistant') }}">Create a draft</a></div>
+<section class="stack">
+{% for draft in drafts %}<article class="panel"><div class="section-heading"><div><h2>{{ draft.company_name or 'Lead removed' }} · {{ draft.channel }}</h2><small>{{ draft.created_at }} · {{ draft.status }}</small></div><form method="post" action="{{ url_for('update_draft_status', draft_id=draft.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><select name="status">{% for status in ['Draft','Approved','Archived'] %}<option {% if draft.status == status %}selected{% endif %}>{{ status }}</option>{% endfor %}</select><button class="small" type="submit">Update</button></form></div>
+{% if draft.subject %}<p><strong>Subject:</strong> {{ draft.subject }}</p>{% endif %}<pre class="draft-body">{{ draft.body }}</pre>
+<button type="button" class="secondary" onclick="navigator.clipboard.writeText({{ draft.body|tojson|forceescape }}).then(()=>this.textContent='Copied')">Copy message</button>
+</article>{% else %}<div class="empty panel">No drafts yet. Generate one from the sales assistant.</div>{% endfor %}
+</section>
+{% endblock %}

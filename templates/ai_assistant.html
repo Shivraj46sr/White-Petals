@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}AI business development · White Petals{% endblock %}
+{% block content %}
+<div class="page-heading"><div><p class="eyebrow">YOUR AI BUSINESS DEVELOPMENT TEAM</p><h1>AI Agent Control Room</h1><p>Assign a clear task to a specialist. Agents return reviewable work; you stay in control.</p></div></div>
+{% if not gemini_configured %}
+<section class="notice"><strong>Gemini is not configured.</strong> Add <code>GEMINI_API_KEY</code> to the private local <code>.env</code> file, then restart the app. Never paste keys into this page or chat.</section>
+{% endif %}
+<section class="panel">
+  <h2>Clear guardrails, useful work</h2>
+  <p>Agents can analyze selected CRM business fields and prepare plans, research checklists, priorities, follow-up recommendations, or outreach drafts. They cannot browse the web, change CRM records, contact customers, send messages, or confirm bookings. Their task results are saved here for your review.</p>
+  <p class="muted">Gemini receives the agent name, specialty, guidance, task, and up to 25 active lead summaries (company/category/industry/location/stage, score, follow-up, estimated value, research status). Contact details, notes, website contents, and communication history are excluded. Do not put secrets or personal data in custom instructions or tasks. Google may process requests under its API terms and charges. Verify facts and consent before acting.</p>
+</section>
+<section class="notice"><strong>AI Call Coach is ready.</strong> Prepare a lead-specific call guide only for a lead with recorded permission, source, and date—or practice with a fictional scenario that sends no CRM lead data. It cannot place, record, or listen to live calls; phone-provider integration is not configured.</section>
+<section class="panel proposal-studio">
+  <div class="section-heading"><div><p class="eyebrow">A BETTER REASON TO SAY YES</p><h2>Event Experience Studio</h2><p>Turn a prospect's stated goal into a creative event concept, draft agenda, and planning brief.</p></div><span class="pill">HUMAN REVIEW</span></div>
+  <form method="post" class="form-grid proposal-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="mode" value="event_proposal">
+    <label>Active prospect<select name="proposal_lead_id" required><option value="">Choose a company</option>{% for lead in leads %}<option value="{{ lead.lead_id }}" {% if selected_mode == 'event_proposal' and selected_lead and selected_lead.id == lead.lead_id %}selected{% endif %}>{{ lead.company_name }} · {{ lead.stage }} · {{ lead.city or lead.state or 'Location unknown' }}</option>{% endfor %}</select></label>
+    <label>Event type<input name="event_type" maxlength="120" required placeholder="e.g. leadership retreat, team celebration"></label>
+    <label>Possible event date<input name="event_date" type="date"></label>
+    <label>Estimated guest count<input name="guest_count" type="number" min="1" max="10000" step="1" placeholder="Optional"></label>
+    <label class="full">What does the company want people to experience or achieve?<textarea name="event_goal" rows="3" maxlength="500" required placeholder="e.g. help a 30-person team celebrate a milestone and reconnect"></textarea></label>
+    <div class="full actions"><button type="submit" {% if not gemini_configured or not leads %}disabled{% endif %}>✳ Create event concept</button><small>Suggestions only; not a quote, booking, or confirmation.</small></div>
+  </form>
+  <p class="muted proposal-privacy">Gemini receives the selected company's business details, event type, goal, and optional date/guest count. Contact information, CRM notes, and communication history are excluded.</p>
+</section>
+{% if latest_task %}
+<section class="panel agent-result">
+  {% if latest_task.status == 'Completed' %}
+  {% set task_result = latest_task.result_json|from_json %}
+  <p class="eyebrow">TASK #{{ latest_task.id }} · {{ latest_task.agent_name }} · COMPLETED</p>
+  <h2>{{ latest_task.objective }}</h2><p>{{ task_result.summary }}</p>
+  <div class="two-columns">
+    <div><h3>Work prepared</h3><ul>{% for item in task_result.deliverables %}<li>{{ item }}</li>{% else %}<li>No deliverables returned.</li>{% endfor %}</ul></div>
+    <div><h3>Suggested next steps</h3><ul>{% for item in task_result.next_steps %}<li>{{ item }}</li>{% else %}<li>No next steps returned.</li>{% endfor %}</ul></div>
+  </div>
+  {% if task_result.risks %}<h3>Review before acting</h3><ul>{% for item in task_result.risks %}<li>{{ item }}</li>{% endfor %}</ul>{% endif %}
+  {% else %}
+  <p class="eyebrow">TASK #{{ latest_task.id }} · {{ latest_task.agent_name }} · {{ latest_task.status }}</p>
+  <h2>{{ latest_task.objective }}</h2><p class="flash error">{{ latest_task.error or 'Task did not complete.' }}</p>
+  {% endif %}
+</section>
+{% endif %}
+<section class="panel">
+  <div class="section-heading"><div><h2>Meet your specialists</h2><p>Choose an agent, write one outcome-focused assignment, and run it when you’re ready.</p></div><span class="pill">{{ agents|length }} agents</span></div>
+  <div class="agent-grid">
+    {% for agent in agents %}
+    <article class="agent-card">
+      <p class="eyebrow">{% if agent.is_builtin %}SPECIALIST{% else %}CUSTOM AGENT{% endif %}</p>
+      <h3>{{ agent.name }}</h3><p class="muted">{{ agent.specialty }}</p>
+      <details><summary>Agent guidance</summary><p>{{ agent.instructions }}</p></details>
+      <form method="post" action="{{ url_for('assign_business_agent_task', agent_id=agent.id) }}" class="stack agent-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        {% if agent.name == 'AI Call Coach' %}
+        <label>Call preparation<select name="lead_id"><option value="">Fictional practice only · no lead data</option>{% for lead in call_coach_leads %}<option value="{{ lead.id }}">Permission recorded · {{ lead.company_name }} · {{ lead.sales_status }} · {{ lead.city or lead.state or 'Location unknown' }}</option>{% endfor %}</select></label>
+        <small>Real-lead briefs are available only when permission, its source, and its date are recorded. Selecting a lead shares only its business summary with Gemini.</small>
+        {% endif %}
+        <label>Give this agent a task<textarea name="objective" rows="3" maxlength="1000" required placeholder="{% if agent.name == 'AI Call Coach' %}Prepare a respectful call guide for a qualified corporate-events prospect. Include an honest opening, permission to continue, discovery questions, objection handling, a graceful close, and a call-note checklist. Don't invent resort facts.{% else %}Example: Review active leads due for follow-up and prepare a respectful call-preparation checklist.{% endif %}"></textarea></label>
+        <button type="submit" {% if not gemini_configured %}disabled{% endif %}>{% if agent.name == 'AI Call Coach' %}Prepare call guide / practice{% else %}Assign &amp; run task{% endif %}</button>
+      </form>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+<section class="panel">
+  <h2>Create a specialist agent</h2>
+  <p class="muted">Define its business-development focus and guidance. Custom guidance is prompt context, not code or extra system access.</p>
+  <form method="post" action="{{ url_for('create_business_agent') }}" class="form-grid">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label>Agent name<input name="name" maxlength="80" required placeholder="e.g. Corporate Events Planner"></label>
+    <label>Specialty<input name="specialty" maxlength="120" required placeholder="e.g. Prepare event opportunity checklists"></label>
+    <label class="full">Guidance<textarea name="instructions" maxlength="1000" rows="3" required placeholder="Describe the kind of reviewable work it should prepare. Do not include private information."></textarea></label>
+    <div class="full"><button type="submit">Create agent</button></div>
+  </form>
+</section>
+<section class="panel">
+  <div class="section-heading"><div><h2>Work log</h2><p>Assignments and outcomes remain available across restarts.</p></div></div>
+  {% if agent_tasks %}
+  <div class="table-wrap"><table><thead><tr><th>When</th><th>Agent</th><th>Task</th><th>Status</th></tr></thead><tbody>
+  {% for task in agent_tasks %}<tr><td>{{ task.created_at }}</td><td>{{ task.agent_name }}</td><td>{{ task.objective }}</td><td><span class="pill">{{ task.status }}</span>{% if task.error %}<small>{{ task.error }}</small>{% endif %}</td></tr>{% endfor %}
+  </tbody></table></div>
+  {% else %}<div class="empty">No agent work assigned yet. Choose a specialist above to give your first assignment.</div>{% endif %}
+</section>
+<details class="panel">
+  <summary><strong>Quick AI tools</strong> · daily plan, priorities, and lead strategy</summary>
+<section class="two-columns">
+  <article class="panel stack">
+    <div><h2>Plan today</h2><p>Get a short, reviewable action plan from up to 25 active leads.</p></div>
+    <form method="post" class="stack"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="mode" value="daily_plan"><button type="submit" {% if not gemini_configured or not leads %}disabled{% endif %}>Create daily plan</button></form>
+  </article>
+  <article class="panel stack">
+    <div><h2>Prioritize active leads</h2><p>Ask Gemini to suggest an order and next step. This does not change CRM lead scores.</p></div>
+    <form method="post" class="stack"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="mode" value="prioritize_leads"><button type="submit" {% if not gemini_configured or not leads %}disabled{% endif %}>Review priorities</button></form>
+  </article>
+</section>
+<section class="panel narrow">
+  <h2>Analyze one lead</h2><p>Review a single active prospect's strategy, next step, and research gaps.</p>
+  <form method="post" class="stack">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="mode" value="lead_strategy">
+    <label>Active lead<select name="lead_id" required><option value="">Choose a lead</option>{% for lead in leads %}<option value="{{ lead.lead_id }}" {% if selected_lead and selected_lead.id == lead.lead_id %}selected{% endif %}>{{ lead.company_name }} · {{ lead.stage }} · {{ lead.city or lead.state or 'Location unknown' }}</option>{% endfor %}</select></label>
+    <button type="submit" {% if not gemini_configured or not leads %}disabled{% endif %}>Analyze selected lead</button>
+  </form>
+</section>
+{% if result %}
+<section class="panel">
+  {% if selected_mode == 'event_proposal' %}
+  <p class="eyebrow">EVENT CONCEPT · DRAFT FOR REVIEW · NOT A QUOTE</p>
+  <h2>{{ result.concept_title }}</h2>
+  <p><strong>For:</strong> {{ selected_lead.company_name }} · {{ proposal_context.event_type }}{% if proposal_context.event_date %} · {{ proposal_context.event_date }}{% endif %}{% if proposal_context.guest_count %} · About {{ proposal_context.guest_count }} guests{% endif %}</p>
+  <p>{{ result.concept_summary }}</p>
+  {% if result.experience_ideas %}<h3>Experience ideas</h3><ul>{% for item in result.experience_ideas %}<li>{{ item }}</li>{% endfor %}</ul>{% endif %}
+  {% if result.draft_agenda %}<h3>Draft run of show</h3><div class="table-wrap"><table><thead><tr><th>Suggested time</th><th>Agenda idea</th></tr></thead><tbody>{% for item in result.draft_agenda %}<tr><td>{{ item.time }}</td><td>{{ item.segment }}</td></tr>{% endfor %}</tbody></table></div>{% endif %}
+  <div class="two-columns proposal-lists">
+    <div><h3>Planning checklist</h3><ul>{% for item in result.planning_checklist %}<li>{{ item }}</li>{% else %}<li>Confirm requirements with the company.</li>{% endfor %}</ul></div>
+    <div><h3>Questions for the prospect</h3><ul>{% for item in result.discovery_questions %}<li>{{ item }}</li>{% else %}<li>Ask about their event priorities and constraints.</li>{% endfor %}</ul></div>
+  </div>
+  <div class="notice"><strong>Confirm with the resort before presenting.</strong><ul>{% for item in result.confirm_with_resort %}<li>{{ item }}</li>{% endfor %}</ul><p>Nothing here confirms facilities, capacity, availability, price, meals, terms, or a booking.</p></div>
+  {% elif selected_mode == 'daily_plan' %}
+  <h2>Suggested plan for today</h2><p>{{ result.summary }}</p>
+  <div class="table-wrap"><table><thead><tr><th>Priority</th><th>Lead / task</th><th>Suggested action</th><th>Reason</th></tr></thead><tbody>
+  {% for action in result.actions %}<tr><td>{{ action.priority }}</td><td>{% if action.lead_id %}<a href="{{ url_for('lead_detail', lead_id=action.lead_id) }}">{{ action.company_name }}</a>{% else %}{{ action.company_name }}{% endif %}</td><td>{{ action.action }}</td><td>{{ action.reason }}</td></tr>{% else %}<tr><td colspan="4">No valid actions were returned.</td></tr>{% endfor %}
+  </tbody></table></div>
+  {% if result.watchouts %}<h3>Review before acting</h3><ul>{% for item in result.watchouts %}<li>{{ item }}</li>{% endfor %}</ul>{% endif %}
+  {% elif selected_mode == 'prioritize_leads' %}
+  <h2>Suggested lead priorities</h2><p class="muted">AI suggestions only; existing lead scores and pipeline stages were not changed.</p>
+  <div class="table-wrap"><table><thead><tr><th>Priority</th><th>Company</th><th>Reason</th><th>Suggested next action</th></tr></thead><tbody>
+  {% for item in result.recommendations %}<tr><td>{{ item.priority }}</td><td><a href="{{ url_for('lead_detail', lead_id=item.lead_id) }}">{{ item.company_name }}</a></td><td>{{ item.reason }}</td><td>{{ item.next_action }}</td></tr>{% else %}<tr><td colspan="4">No valid recommendations were returned.</td></tr>{% endfor %}
+  </tbody></table></div>
+  {% elif selected_mode == 'lead_strategy' %}
+  <h2>Lead strategy · {{ selected_lead.company_name }}</h2>
+  <p><strong>Suggested priority:</strong> {{ result.priority }}</p><p><strong>Reason:</strong> {{ result.reason }}</p>
+  <p><strong>Next action:</strong> {{ result.next_action }}</p><p><strong>Possible outreach angle:</strong> {{ result.outreach_angle }}</p>
+  <h3>Information gaps</h3>{% if result.research_gaps %}<ul>{% for item in result.research_gaps %}<li>{{ item }}</li>{% endfor %}</ul>{% else %}<p>No additional gaps listed.</p>{% endif %}
+  {% endif %}
+</section>
+{% endif %}
+</details>
+{% endblock %}

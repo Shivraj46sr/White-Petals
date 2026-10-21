@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Overview & leads · White Petals{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <div><p class="eyebrow">BUSINESS DEVELOPMENT</p><h1>Overview & leads</h1><p>Track prospects, approved next steps, and confirmed booking revenue.</p></div>
+  <a class="button" href="{{ url_for('create_lead') }}">＋ Add lead</a>
+</div>
+<section class="cards">
+  <article class="metric"><span>Total leads</span><strong>{{ total_companies }}</strong></article>
+  <article class="metric"><span>New leads</span><strong>{{ new_leads }}</strong></article>
+  <article class="metric"><span>Follow-ups due</span><strong>{{ due_follow_ups }}</strong><a href="{{ url_for('follow_ups') }}">Review tasks</a></article>
+  <article class="metric"><span>Research to complete</span><strong>{{ leads_to_research }}</strong><a href="{{ url_for('research_queue') }}">Open research queue</a></article>
+  <article class="metric"><span>Open estimated pipeline</span><strong>₹{{ "%.2f"|format(open_pipeline_value or 0) }}</strong><small>{{ open_pipeline_leads }} active opportunities · estimates only</small></article>
+  <article class="metric"><span>Confirmed bookings</span><strong>{{ confirmed_bookings }}</strong></article>
+  <article class="metric"><span>Confirmed revenue</span><strong>₹{{ "%.2f"|format(confirmed_revenue or 0) }}</strong><small>Confirmed bookings only</small></article>
+</section>
+<section class="panel pipeline-overview">
+  <div class="section-heading"><div><h2>Business development pipeline</h2><p>Review progress by sales stage. Counts exclude lost and do-not-contact records.</p></div><a href="{{ url_for('bookings') }}">Open full pipeline →</a></div>
+  <div class="stage-grid">
+    {% for stage in pipeline_stages %}
+    <a class="stage-item" href="{{ url_for('bookings', status=stage.name) }}">
+      <span class="stage-label">{{ stage.name }}</span><strong>{{ stage.count }}</strong>
+      <span class="stage-track"><span style="width: {{ stage.width }}%"></span></span>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+<section class="panel">
+  <div class="section-heading"><div><h2>Lead list</h2><p>{{ filtered_total }} result(s), sorted by follow-up urgency and score.</p></div><div class="actions"><a href="{{ url_for('export_csv') }}">Export CSV</a><a href="{{ url_for('export_xlsx') }}">Export Excel</a></div></div>
+  <form method="get" class="filters">
+    <input type="search" name="q" value="{{ filters.q }}" placeholder="Search company, industry, email…">
+    <select name="status"><option value="">All stages</option>{% for value in ['New Lead','Researching','Qualified','Ready to Contact','Contacted','Follow-up Required','Interested','Enquiry Received','Proposal Sent','Negotiation','Site Visit','Booking Confirmed','Lost','Do Not Contact'] %}<option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ value }}</option>{% endfor %}</select>
+    <select name="company_category"><option value="">All company categories</option>{% for category in company_categories %}<option value="{{ category }}" {% if filters.company_category == category %}selected{% endif %}>{{ category }}</option>{% endfor %}</select>
+    <input name="city" value="{{ filters.city }}" placeholder="City or state">
+    <label class="check"><input type="checkbox" name="follow_up" value="due" {% if filters.follow_up == 'due' %}checked{% endif %}> Due only</label>
+    <button type="submit">Filter</button><a href="{{ url_for('index') }}">Clear</a>
+  </form>
+  {% if leads %}
+  <div class="table-wrap"><table><thead><tr><th>Company</th><th>Category / industry</th><th>Contact</th><th>Stage</th><th>Score</th><th>Next follow-up</th></tr></thead><tbody>
+  {% for lead in leads %}<tr>
+    <td><a class="strong" href="{{ url_for('lead_detail', lead_id=lead.id) }}">{{ lead.company_name }}</a>{% if lead.website %}<small><a href="{{ lead.website }}" target="_blank" rel="noopener noreferrer">Website ↗</a></small>{% endif %}</td>
+    <td>{{ lead.company_category or 'Other' }}<small>{{ lead.industry or '—' }} · {{ lead.city or '—' }}{% if lead.state %}, {{ lead.state }}{% endif %}</small></td>
+    <td>{{ lead.email or lead.phone or '—' }}</td>
+    <td><span class="pill">{{ lead.sales_status }}</span></td>
+    <td>{{ lead.lead_score }}/10</td>
+    <td>{% if lead.next_follow_up %}<span class="{% if lead.next_follow_up <= today %}overdue{% endif %}">{{ lead.next_follow_up }}</span>{% else %}—{% endif %}</td>
+  </tr>{% endfor %}
+  </tbody></table></div>
+  {% else %}<div class="empty">No leads match these filters. Add a lead or import your CSV/Excel list.</div>{% endif %}
+  {% if filtered_total > page_size %}
+  <div class="pagination">{% if page > 1 %}<a href="{{ url_for('index', q=filters.q, status=filters.status, city=filters.city, company_category=filters.company_category, follow_up=filters.follow_up, page=page-1) }}">← Previous</a>{% endif %}<span>Page {{ page }} · {{ filtered_total }} leads</span>{% if page * page_size < filtered_total %}<a href="{{ url_for('index', q=filters.q, status=filters.status, city=filters.city, company_category=filters.company_category, follow_up=filters.follow_up, page=page+1) }}">Next →</a>{% endif %}</div>
+  {% endif %}
+</section>
+<section class="two-columns">
+  <article class="panel"><h2>Import leads</h2><p>Upload .csv or .xlsx, maximum 5 MB and 5,000 rows. Company name plus city and state are used for duplicate checks.</p>
+    <form method="post" action="{{ url_for('import_leads') }}" enctype="multipart/form-data" class="inline-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="file" name="file" accept=".csv,.xlsx" required><button type="submit">Import</button>
+    </form><a href="{{ url_for('import_template') }}">Download import template</a>
+  </article>
+  <article class="panel"><h2>Find new leads</h2><p>Search OpenStreetMap for public business listings by city or state. Enter one or more locations; Bengaluru/Bangalore and Mysuru/Mysore are treated as aliases. State-wide searches can return many more results and take longer. New company-and-city matches are added to your CRM; existing leads are matched and only missing public details are filled. Map categories are discovery hints—not verified industries, buyers, or permission to contact.</p>
+    <form method="post" action="{{ url_for('collect_leads') }}" class="stack">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <label>City, district, or state <input name="city" value="Bengaluru" placeholder="Bengaluru, Mysuru, Karnataka" required maxlength="500"></label>
+      <p class="muted">Search up to five locations at once, separated by commas. Each is queried separately so listings retain their search-area attribution. Examples: <code>Bangalore, Mysore</code> or <code>Karnataka, Tamil Nadu</code>. State-wide results may take longer.</p>
+      <fieldset class="category-options"><legend>Company categories</legend>
+        {% for key, label in category_labels.items() %}
+        <label class="category-choice"><input type="checkbox" name="categories" value="{{ key }}" {% if key in default_categories %}checked{% endif %}> {{ label }}</label>
+        {% endfor %}
+      </fieldset>
+      <details><summary>Optional additional category keys</summary><p class="muted">Separate keys with commas. Supported: office, industrial, landuse=industrial, manufacturing, startup, corporate_office, finance, training, shop, hotel, event.</p><input name="custom_categories" placeholder="e.g. startup, shop"></details>
+      <button type="submit">Find new leads</button>
+    </form>
+  </article>
+</section>
+{% endblock %}

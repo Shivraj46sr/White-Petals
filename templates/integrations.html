@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Setup & integrations · White Petals{% endblock %}
+{% block content %}
+<div class="page-heading"><div><p class="eyebrow">SETUP CHECKLIST</p><h1>Integrations & settings</h1><p>The CRM runs locally; Gemini is used only for drafts you explicitly request.</p></div></div>
+<section class="panel"><h2>Configuration status</h2><div class="setup-list">
+<div><span>Local CRM and SQLite</span><strong class="status-ok">Available</strong></div>
+<div><span>Scheduled daily report</span><strong>Runs when app.py is running</strong></div>
+<div><span>Scheduled database backup</span><strong>Daily at {{ backup_time }} Asia/Kolkata while app.py is running</strong></div>
+<div><span>Application password</span><strong>{{ 'Configured' if password_configured else 'Not configured (local-only)' }}</strong></div>
+<div><span>Google Gemini drafts</span><strong>{{ 'Configured · opt-in draft generation' if ai_configured else 'Not configured · standard templates available' }}</strong></div>
+<div><span>Gmail OAuth</span><strong>{{ 'Not connected' if not gmail_configured else 'Configured' }}</strong></div>
+<div><span>WhatsApp Business Platform</span><strong>{{ 'Not connected' if not whatsapp_configured else 'Configured' }}</strong></div>
+<div><span>Contact permission tracking</span><strong>Available on lead records · default is Not recorded</strong></div>
+<div><span>Local database backups</span><strong>{{ backups|length }} saved</strong></div>
+</div></section>
+<section class="panel">
+  <h2>Back up or restore CRM data</h2>
+  <p>Create a consistent SQLite snapshot while the CRM is running. A daily backup is also scheduled at {{ backup_time }} Asia/Kolkata while the app is running. Backups stay in the local, git-ignored <code>backups</code> folder and a manual snapshot downloads to your browser. Keep a separate copy in a secure location. A database backup contains prospect and customer records; it does not include <code>.env</code> secrets. The scheduled job pauses if the computer sleeps or the app stops.</p>
+  <form method="post" action="{{ url_for('create_backup_download') }}" class="actions">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <button type="submit">Create &amp; download database backup</button>
+  </form>
+  {% if backups %}
+  <h3>Restore a saved backup</h3>
+  <div class="notice"><strong>This replaces the current CRM database.</strong> The current database is first saved as a safety backup. After restore, verify leads and activity before continuing.</div>
+  <form method="post" action="{{ url_for('restore_backup') }}" class="form-grid">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label>Saved backup<select name="backup_name" required>{% for backup in backups %}<option value="{{ backup.name }}">{{ backup.created_at }} · {{ "%.1f"|format(backup.size / 1048576) }} MB</option>{% endfor %}</select></label>
+    <label>Type RESTORE to confirm<input name="confirmation" required pattern="RESTORE" autocomplete="off"></label>
+    <div class="full"><button class="danger" type="submit">Restore selected backup</button></div>
+  </form>
+  {% else %}<p class="muted">No saved backups yet. Create your first backup before relying on restore.</p>{% endif %}
+</section>
+<section class="two-columns"><article class="panel"><h2>Email & WhatsApp</h2><p>Drafts can be reviewed and copied, but sending, OAuth, inbound replies, and provider status tracking are not implemented. Do not add Gmail or WhatsApp passwords here.</p><p>Use official Gmail OAuth or the official WhatsApp Business Platform if you commission those integrations. Messaging must be authorized and respect opt-outs.</p></article>
+<article class="panel"><h2>AI drafts & agent tasks</h2><p>Gemini runs only when you explicitly request a draft, analysis, or agent task. The AI workspace sends limited lead business fields, not contacts, CRM notes, website contents, or communication history. Your agent instructions and task text are also sent, so do not include secrets or personal information. Google may process requests under your account and applicable terms; review privacy and cost before use.</p><p>Store <code>GEMINI_API_KEY</code> in the local, git-ignored <code>.env</code> file and restart the app. Agent outputs are saved for human review; agents cannot change CRM records, browse, or send messages.</p></article></section>
+<section class="notice"><strong>Deployment:</strong> this app binds to 127.0.0.1 by default. Before exposing it to a network or cloud, configure a strong persistent SECRET_KEY and APP_PASSWORD, use HTTPS, and add production-grade authorization and deployment controls.</section>
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Lead pipeline · White Petals{% endblock %}
+{% block content %}
+<div class="page-heading"><div><p class="eyebrow">SALES PIPELINE</p><h1>Lead pipeline</h1><p>{{ matching_records }} matching records · Estimated opportunities are separate from confirmed booking revenue.</p></div></div>
+<section class="panel">
+<form method="get" class="filters">
+  <input type="search" name="q" value="{{ search }}" placeholder="Search company, email, phone…">
+  <select name="status"><option value="">All statuses</option>{% for status in statuses %}<option value="{{ status }}" {% if selected_status == status %}selected{% endif %}>{{ status }}</option>{% endfor %}</select>
+  <input name="city" value="{{ selected_city }}" placeholder="City or state">
+  <select name="company_category"><option value="">All company categories</option>{% for category in company_categories %}<option value="{{ category }}" {% if selected_category == category %}selected{% endif %}>{{ category }}</option>{% endfor %}</select>
+  <button type="submit">Filter</button><a href="{{ url_for('bookings') }}">Clear</a>
+</form>
+<div class="table-wrap"><table><thead><tr><th>Company</th><th>Company category</th><th>City / state</th><th>Score</th><th>Status</th><th>Follow-up</th><th>Contact</th></tr></thead><tbody>
+{% for lead in leads %}<tr><td><a class="strong" href="{{ url_for('lead_detail', lead_id=lead.id) }}">{{ lead.company_name }}</a></td><td>{{ lead.company_category or 'Other' }}</td><td>{{ lead.city or '—' }}{% if lead.state %}<small>{{ lead.state }}</small>{% endif %}</td><td>{{ lead.lead_score }}/10</td><td><span class="pill">{{ lead.sales_status }}</span></td><td>{% if lead.next_follow_up %}<span class="{% if lead.next_follow_up <= today %}overdue{% endif %}">{{ lead.next_follow_up }}</span>{% else %}—{% endif %}</td><td>{{ lead.email or lead.phone or '—' }}</td></tr>
+{% else %}<tr><td colspan="7">No leads match these filters.</td></tr>{% endfor %}
+</tbody></table></div></section>
+{% if matching_records > page_size %}
+<div class="pagination panel">{% if page > 1 %}<a href="{{ url_for('bookings', q=search, status=selected_status, city=selected_city, company_category=selected_category, page=page-1) }}">← Previous</a>{% endif %}<span>Page {{ page }} · {{ matching_records }} leads</span>{% if page * page_size < matching_records %}<a href="{{ url_for('bookings', q=search, status=selected_status, city=selected_city, company_category=selected_category, page=page+1) }}">Next →</a>{% endif %}</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Company research · White Petals{% endblock %}
+{% block content %}
+<div class="page-heading"><div><p class="eyebrow">PUBLIC BUSINESS INFORMATION</p><h1>Company research</h1><p>Checks only the supplied public website and generic public business email. Findings are not independently verified.</p></div></div>
+<section class="panel"><div class="table-wrap"><table><thead><tr><th>Company</th><th>Industry / city</th><th>Website</th><th>Status</th><th>Last checked</th><th>Action</th></tr></thead><tbody>
+{% for lead in leads %}<tr><td><a class="strong" href="{{ url_for('lead_detail', lead_id=lead.id) }}">{{ lead.company_name }}</a></td><td>{{ lead.industry or '—' }}<small>{{ lead.city or '—' }}{% if lead.state %}, {{ lead.state }}{% endif %}</small></td><td>{% if lead.website %}<a href="{{ lead.website }}" target="_blank" rel="noopener noreferrer">Open ↗</a>{% else %}Not provided{% endif %}</td><td><span class="pill">{{ lead.research_status or 'Not researched' }}</span></td><td>{{ lead.researched_at or '—' }}</td><td>{% if lead.website %}<form method="post" action="{{ url_for('research_lead', lead_id=lead.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="small" type="submit">Check</button></form>{% else %}<a href="{{ url_for('lead_detail', lead_id=lead.id) }}">Add website</a>{% endif %}</td></tr>
+{% else %}<tr><td colspan="6">No leads found.</td></tr>{% endfor %}
+</tbody></table></div><p class="muted">The check does not bypass login, CAPTCHA, access restrictions, or anti-bot controls. Website content is treated as untrusted and is not sent to an AI provider.</p></section>
+{% endblock %}

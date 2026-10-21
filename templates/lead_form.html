@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} · White Petals{% endblock %}
+{% block content %}
+<div class="page-heading"><div><p class="eyebrow">CRM</p><h1>{{ title }}</h1><p>Only enter contact details with a public source or appropriate authorization.</p></div></div>
+<form method="post" class="panel form-grid">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <label>Company category
+    <select name="company_category">
+      {% for category in company_categories %}<option value="{{ category }}" {% if lead.get('company_category') == category or (not lead.get('company_category') and category == 'Other') %}selected{% endif %}>{{ category }}</option>{% endfor %}
+    </select>
+  </label>
+  {% for field, label in [('company_name','Company name'),('industry','Industry / source category'),('website','Website'),('city','City'),('state','State'),('area','Area / locality'),('address','Address'),('contact_person','Contact person'),('job_title','Job title'),('email','Business email'),('phone','Phone'),('service_interested','Potential service'),('event_date','Event date'),('guest_count','Guest count'),('estimated_value','Estimated opportunity value'),('confirmed_revenue','Confirmed revenue'),('last_contacted','Last contacted'),('next_follow_up','Next follow-up')] %}
+  <label>{{ label }}{% if field == 'company_name' %} *{% endif %}
+    <input name="{{ field }}" {% if field in ['event_date','last_contacted','next_follow_up'] %}type="date"{% elif field in ['guest_count','estimated_value','confirmed_revenue'] %}type="number" min="0" step="{% if field == 'guest_count' %}1{% else %}0.01{% endif %}"{% elif field == 'email' %}type="email"{% elif field == 'website' %}type="url" placeholder="https://example.com"{% else %}type="text"{% endif %} value="{{ lead.get(field, '') or '' }}" {% if field == 'company_name' %}required{% endif %}>
+  </label>
+  {% endfor %}
+  <label>Contact permission
+    <select name="contact_permission">
+      {% for permission in contact_permission_statuses %}<option value="{{ permission }}" {% if (lead.get('contact_permission') or 'Not recorded') == permission %}selected{% endif %}>{{ permission }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Permission recorded date<input name="permission_recorded_at" type="date" value="{{ lead.get('permission_recorded_at', '') or '' }}"></label>
+  <label class="full">Permission source / evidence<textarea name="permission_source" rows="2" maxlength="300" placeholder="Record how and where permission was obtained. Do not enter unnecessary personal data.">{{ lead.get('permission_source', '') or '' }}</textarea></label>
+  <label>Pipeline stage<select name="sales_status">{% for value in statuses %}<option value="{{ value }}" {% if lead.get('sales_status') == value %}selected{% endif %}>{{ value }}</option>{% endfor %}</select></label>
+  <label class="full">Notes<textarea name="notes" rows="4">{{ lead.get('notes', '') or '' }}</textarea></label>
+  <div class="full actions"><button type="submit">Save lead</button><a class="button secondary" href="{{ url_for('index') }}">Cancel</a></div>
+</form>
+{% endblock %}

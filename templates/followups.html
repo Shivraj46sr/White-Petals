@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Follow-up tasks · White Petals{% endblock %}
+{% block content %}
+<div class="page-heading"><div><p class="eyebrow">TASKS · {{ today }}</p><h1>Follow-ups</h1><p>Reminders only: complete or reschedule after reviewing contact restrictions and prior history.</p></div></div>
+<section class="panel"><h2>Due or overdue ({{ due|length }})</h2>
+{% if due %}<div class="table-wrap"><table><thead><tr><th>Company</th><th>Due</th><th>Stage</th><th>Contact</th><th>Actions</th></tr></thead><tbody>
+{% for lead in due %}<tr><td><a class="strong" href="{{ url_for('lead_detail', lead_id=lead.id) }}">{{ lead.company_name }}</a></td><td class="overdue">{{ lead.next_follow_up }}</td><td>{{ lead.sales_status }}</td><td>{{ lead.email or lead.phone or '—' }}</td><td><div class="action-stack"><form method="post" action="{{ url_for('update_follow_up', lead_id=lead.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="action" value="complete"><button class="small" type="submit">Complete</button></form><form method="post" action="{{ url_for('update_follow_up', lead_id=lead.id) }}" class="inline-form"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="action" value="reschedule"><input type="date" name="next_follow_up" min="{{ today }}" required><button class="small secondary" type="submit">Reschedule</button></form></div></td></tr>{% endfor %}
+</tbody></table></div>{% else %}<div class="empty">No follow-ups are due. Set dates from an individual lead record.</div>{% endif %}</section>
+<section class="panel"><h2>Upcoming</h2>{% if upcoming %}<div class="table-wrap"><table><thead><tr><th>Company</th><th>Date</th><th>Stage</th></tr></thead><tbody>{% for lead in upcoming %}<tr><td><a href="{{ url_for('lead_detail', lead_id=lead.id) }}">{{ lead.company_name }}</a></td><td>{{ lead.next_follow_up }}</td><td>{{ lead.sales_status }}</td></tr>{% endfor %}</tbody></table></div>{% else %}<div class="empty">No upcoming tasks.</div>{% endif %}</section>
+{% endblock %}

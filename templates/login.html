@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Sign in · White Petals{% endblock %}
+{% block content %}
+<section class="panel narrow login-panel">
+  <h1>Sign in</h1>
+  <p>Enter the local application password configured by the administrator.</p>
+  <form method="post" class="stack">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label>Password <input type="password" name="password" required autocomplete="current-password"></label>
+    <button type="submit">Sign in</button>
+  </form>
+</section>
+{% endblock %}

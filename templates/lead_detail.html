@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}{{ lead.company_name }} · White Petals{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <div><p class="eyebrow">LEAD · {{ lead.sales_status }}</p><h1>{{ lead.company_name }}</h1><p>{{ lead.company_category or 'Other' }} · {{ lead.industry or 'Industry not provided' }} · {{ lead.city or 'City not provided' }}{% if lead.state %}, {{ lead.state }}{% endif %} · Score {{ lead.lead_score }}/10</p></div>
+  <a class="button secondary" href="{{ url_for('index') }}">← Back to leads</a>
+</div>
+<section class="two-columns">
+  <form method="post" action="{{ url_for('update_lead', lead_id=lead.id) }}" class="panel form-grid">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><h2 class="full">Lead details</h2>
+    <label>Company category<select name="company_category">{% for category in company_categories %}<option value="{{ category }}" {% if (lead.company_category or 'Other') == category %}selected{% endif %}>{{ category }}</option>{% endfor %}</select></label>
+    {% for field, label in [('company_name','Company name'),('industry','Industry / source category'),('website','Website'),('city','City'),('state','State'),('area','Area / locality'),('address','Address'),('contact_person','Contact person'),('job_title','Job title'),('email','Business email'),('phone','Phone'),('service_interested','Potential service'),('event_date','Event date'),('guest_count','Guest count'),('estimated_value','Estimated opportunity value'),('confirmed_revenue','Confirmed revenue'),('last_contacted','Last contacted'),('next_follow_up','Next follow-up')] %}
+    <label>{{ label }}<input name="{{ field }}" {% if field in ['event_date','last_contacted','next_follow_up'] %}type="date"{% elif field in ['guest_count','estimated_value','confirmed_revenue'] %}type="number" min="0" step="{% if field == 'guest_count' %}1{% else %}0.01{% endif %}"{% elif field == 'email' %}type="email"{% elif field == 'website' %}type="url"{% endif %} value="{{ lead[field] or '' }}"></label>
+    {% endfor %}
+    <label>Contact permission<select name="contact_permission">{% for permission in contact_permission_statuses %}<option value="{{ permission }}" {% if (lead.contact_permission or 'Not recorded') == permission %}selected{% endif %}>{{ permission }}</option>{% endfor %}</select></label>
+    <label>Permission recorded date<input name="permission_recorded_at" type="date" value="{{ lead.permission_recorded_at or '' }}"></label>
+    <label class="full">Permission source / evidence<textarea name="permission_source" rows="2" maxlength="300" placeholder="Record how and where permission was obtained.">{{ lead.permission_source or '' }}</textarea></label>
+    <label>Pipeline stage<select name="sales_status">{% for value in statuses %}<option value="{{ value }}" {% if lead.sales_status == value %}selected{% endif %}>{{ value }}</option>{% endfor %}</select></label>
+    <label class="full">Notes<textarea name="notes" rows="4">{{ lead.notes or '' }}</textarea></label>
+    <div class="full actions"><button type="submit">Save changes</button></div>
+    <p class="full muted">Contact is permitted only when permission is recorded. Selecting Opted out forces Do Not Contact. To reopen an opted-out lead, record renewed permission with its source and date. Revenue is counted only for Booking Confirmed leads.</p>
+  </form>
+  <div class="stack">
+    <section class="panel"><h2>Research</h2><p>Status: <span class="pill">{{ lead.research_status or 'Not researched' }}</span></p><p>Source: {{ lead.source or 'Manual entry' }}{% if lead.source_url %} · <a href="{{ lead.source_url }}" target="_blank" rel="noopener noreferrer">source record ↗</a>{% endif %}</p>
+      {% if lead.website %}<form method="post" action="{{ url_for('research_lead', lead_id=lead.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button type="submit">Check public website</button></form>{% endif %}
+      {% for item in research %}<div class="history-item"><strong>{{ item.status }}</strong><small>{{ item.created_at }} · <a href="{{ item.source_url }}" target="_blank" rel="noopener noreferrer">source ↗</a></small><p>{{ item.summary }}</p></div>{% else %}<p class="muted">No website research recorded.</p>{% endfor %}
+    </section>
+    <section class="panel"><h2>Activity log</h2>
+      <form method="post" action="{{ url_for('add_activity', lead_id=lead.id) }}" class="stack"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><label>Type<select name="channel"><option>Note</option><option>Call</option><option>Email</option><option>WhatsApp</option><option>Meeting</option></select></label><label>Activity<textarea name="body" rows="3" required maxlength="4000"></textarea></label><button type="submit">Record activity</button></form>
+      {% for item in history %}<div class="history-item"><strong>{{ item.channel }}</strong><small>{{ item.created_at }}</small><p>{{ item.body }}</p></div>{% else %}<p class="muted">No activity logged.</p>{% endfor %}
+    </section>
+    <section class="panel"><h2>Follow-up</h2><form method="post" action="{{ url_for('update_follow_up', lead_id=lead.id) }}" class="inline-form"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="action" value="reschedule"><input type="date" name="next_follow_up" value="{{ lead.next_follow_up or '' }}" required><button type="submit">Set date</button></form><form method="post" action="{{ url_for('update_follow_up', lead_id=lead.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="action" value="complete"><button class="secondary" type="submit">Mark task complete</button></form></section>
+    <section class="panel danger-zone"><h2>Delete lead</h2><form method="post" action="{{ url_for('delete_lead', lead_id=lead.id) }}" onsubmit="return confirm('Delete this lead and its history? This cannot be undone.')"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="danger" type="submit">Delete lead</button></form></section>
+  </div>
+</section>
+{% endblock %}

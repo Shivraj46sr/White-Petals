@@ -1,0 +1,14 @@
+.env
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+white_petals.log
+exports/
+/backups/
+*.db
+corporate_leads.csv
+company_research_queue.csv
+website_research_batch_*.csv
+bengaluru_company_database.csv
