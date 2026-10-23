@@ -2,18 +2,82 @@
 {% block title %}Overview & leads · White Petals{% endblock %}
 {% block content %}
 <div class="page-heading">
-  <div><p class="eyebrow">BUSINESS DEVELOPMENT</p><h1>Overview & leads</h1><p>Track prospects, approved next steps, and confirmed booking revenue.</p></div>
+  <div><p class="eyebrow">WHITE PETALS · BUSINESS DEVELOPMENT</p><h1>Command center</h1><p>Live CRM intelligence, human-reviewed actions, and a calm view of what needs attention.</p></div>
   <a class="button" href="{{ url_for('create_lead') }}">＋ Add lead</a>
 </div>
+<section class="command-console panel" aria-labelledby="command-title" data-assistant-root>
+  <div class="console-heading">
+    <div><p class="eyebrow">COMMAND INTERFACE · {{ dashboard_updated_at }}</p><h2 id="command-title">Good day. What should we focus on?</h2></div>
+    <div class="provider-state" title="{{ provider_note }}"><span class="status-dot"></span><span data-provider-state>{{ provider_label }}</span></div>
+  </div>
+  <div class="console-meta"><span data-freshness data-rendered-at="{{ dashboard_generated_epoch }}">CRM snapshot generated · refresh to load the latest records.</span><a href="{{ request.full_path }}">Refresh snapshot ↻</a></div>
+  <div class="console-grid">
+    <div class="core-stage">
+      <div class="ai-core" aria-hidden="true">
+        <span class="core-orbit core-orbit-one"></span><span class="core-orbit core-orbit-two"></span>
+        <span class="core-orbit core-orbit-three"></span><span class="core-scan"></span>
+        <span class="core-center"><span>WP</span></span>
+        <span class="core-particle particle-one"></span><span class="core-particle particle-two"></span>
+      </div>
+      <p class="core-caption">WHITE PETALS INTELLIGENCE</p>
+      <p class="core-state" data-core-state>READY</p>
+      <div class="waveform" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    </div>
+    <div class="assistant-panel">
+      <div class="chat-log" data-chat-log role="log" aria-label="Assistant conversation" aria-live="polite" aria-relevant="additions text">
+        <p class="system-message">Quick commands read your CRM locally. Open-ended AI sends your question, up to four recent turns, and aggregate CRM metrics to the selected provider. Keep private details and secrets out of chat.</p>
+      </div>
+      <div class="chat-status" data-chat-status role="status" aria-live="polite">Ready · AI requests include recent chat context; clear the session to remove it from this tab.</div>
+      <form class="assistant-form" data-assistant-form action="{{ url_for('assistant_chat') }}" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <label class="sr-only" for="assistant-message">Ask the business development assistant</label>
+        <textarea id="assistant-message" name="message" rows="2" maxlength="800" placeholder="Ask about the pipeline, priorities, or a business-development question…" data-chat-input></textarea>
+        <div class="assistant-controls">
+          <div class="assistant-voice-controls">
+            <button class="icon-button" type="button" data-voice aria-label="Start voice input">◉ <span data-voice-label>Voice input</span></button>
+            <button class="icon-button" type="button" data-stop-listening hidden>Stop listening</button>
+            <label class="speak-toggle"><input type="checkbox" data-speak> Speak replies</label>
+          </div>
+          <div class="assistant-submit-controls">
+            <button class="icon-button" type="button" data-cancel disabled>Cancel response</button>
+            <button class="send-button" type="submit">Send command <span aria-hidden="true">↗</span></button>
+          </div>
+        </div>
+      </form>
+      <div class="quick-commands" aria-label="Quick CRM commands">
+        <span class="quick-label">QUICK COMMANDS</span>
+        <button type="button" data-command="pipeline">Summarize pipeline</button>
+        <button type="button" data-command="follow_ups">Follow-ups due</button>
+        <button type="button" data-command="research">Research queue</button>
+        <button type="button" class="text-button" data-clear>Clear chat</button>
+      </div>
+      <p class="voice-note" data-voice-note>Voice is opt-in. Browser speech recognition may use browser services; this app does not record or store audio. Review recognized text before sending. Conversation text stays in this tab's session storage until cleared.</p>
+    </div>
+  </div>
+</section>
 <section class="cards">
   <article class="metric"><span>Total leads</span><strong>{{ total_companies }}</strong></article>
-  <article class="metric"><span>New leads</span><strong>{{ new_leads }}</strong></article>
   <article class="metric"><span>Follow-ups due</span><strong>{{ due_follow_ups }}</strong><a href="{{ url_for('follow_ups') }}">Review tasks</a></article>
   <article class="metric"><span>Research to complete</span><strong>{{ leads_to_research }}</strong><a href="{{ url_for('research_queue') }}">Open research queue</a></article>
+  <article class="metric"><span>Open enquiries</span><strong>{{ command_metrics.open_enquiries }}</strong><a href="{{ url_for('bookings', status='Enquiry Received') }}">Review enquiries</a></article>
   <article class="metric"><span>Open estimated pipeline</span><strong>₹{{ "%.2f"|format(open_pipeline_value or 0) }}</strong><small>{{ open_pipeline_leads }} active opportunities · estimates only</small></article>
-  <article class="metric"><span>Confirmed bookings</span><strong>{{ confirmed_bookings }}</strong></article>
-  <article class="metric"><span>Confirmed revenue</span><strong>₹{{ "%.2f"|format(confirmed_revenue or 0) }}</strong><small>Confirmed bookings only</small></article>
+  <article class="metric"><span>Confirmed bookings &amp; revenue</span><strong>{{ confirmed_bookings }} · ₹{{ "%.2f"|format(confirmed_revenue or 0) }}</strong><small>Confirmed bookings only · excludes estimates</small></article>
+  <a class="metric queue-metric" href="{{ url_for('drafts') }}"><span>Drafts awaiting review</span><strong>{{ draft_count }}</strong><small>Open review queue →</small></a>
 </section>
+{% if recent_tasks %}
+<section class="panel activity-panel">
+  <div class="section-heading"><div><p class="eyebrow">REAL TASK HISTORY</p><h2>Recent agent activity</h2><p>Completed work and failures recorded by the existing agent workspace.</p></div><a href="{{ url_for('ai_assistant') }}">Open agent studio →</a></div>
+  <div class="activity-list">
+    {% for task in recent_tasks %}
+    <a class="activity-item" href="{{ url_for('ai_assistant', task_id=task.id) }}">
+      <span class="activity-indicator {{ task.status|lower }}"></span>
+      <span><strong>{{ task.agent_name }}</strong><small>{{ task.created_at }}</small></span>
+      <span class="activity-status">{{ task.status }}</span>
+    </a>
+    {% endfor %}
+  </div>
+  </section>
+{% endif %}
 <section class="panel pipeline-overview">
   <div class="section-heading"><div><h2>Business development pipeline</h2><p>Review progress by sales stage. Counts exclude lost and do-not-contact records.</p></div><a href="{{ url_for('bookings') }}">Open full pipeline →</a></div>
   <div class="stage-grid">
@@ -51,7 +115,9 @@
   <div class="pagination">{% if page > 1 %}<a href="{{ url_for('index', q=filters.q, status=filters.status, city=filters.city, company_category=filters.company_category, follow_up=filters.follow_up, page=page-1) }}">← Previous</a>{% endif %}<span>Page {{ page }} · {{ filtered_total }} leads</span>{% if page * page_size < filtered_total %}<a href="{{ url_for('index', q=filters.q, status=filters.status, city=filters.city, company_category=filters.company_category, follow_up=filters.follow_up, page=page+1) }}">Next →</a>{% endif %}</div>
   {% endif %}
 </section>
-<section class="two-columns">
+<details class="dashboard-tools panel" open>
+  <summary><span><strong>Lead tools</strong><small>Import a list or discover new public business listings</small></span><span class="tools-toggle">＋</span></summary>
+<div class="two-columns">
   <article class="panel"><h2>Import leads</h2><p>Upload .csv or .xlsx, maximum 5 MB and 5,000 rows. Company name plus city and state are used for duplicate checks.</p>
     <form method="post" action="{{ url_for('import_leads') }}" enctype="multipart/form-data" class="inline-form">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="file" name="file" accept=".csv,.xlsx" required><button type="submit">Import</button>
@@ -67,9 +133,11 @@
         <label class="category-choice"><input type="checkbox" name="categories" value="{{ key }}" {% if key in default_categories %}checked{% endif %}> {{ label }}</label>
         {% endfor %}
       </fieldset>
-      <details><summary>Optional additional category keys</summary><p class="muted">Separate keys with commas. Supported: office, industrial, landuse=industrial, manufacturing, startup, corporate_office, finance, training, shop, hotel, event.</p><input name="custom_categories" placeholder="e.g. startup, shop"></details>
+      <details open><summary>Optional additional category keys</summary><p class="muted">Separate keys with commas. Supported: office, industrial, landuse=industrial, manufacturing, startup, corporate_office, finance, training, shop, hotel, event.</p><input name="custom_categories" placeholder="e.g. startup, shop"></details>
       <button type="submit">Find new leads</button>
     </form>
   </article>
-</section>
+</div>
+</details>
+<script src="{{ url_for('static', filename='jarvis.js', v=1) }}" defer></script>
 {% endblock %}

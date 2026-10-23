@@ -22,10 +22,11 @@ If PowerShell blocks environment activation, run `Set-ExecutionPolicy -Scope Cur
 Edit `.env` and set a unique `APP_PASSWORD` and a strong, random `SECRET_KEY`. For example, generate a key with:
 
 ```powershell
+$secret = python -c "import secrets; print(secrets.token_urlsafe(48))"
+$secret
 ```
 
-Copy the printed value intpython -c "import secrets; print(secrets.token_urlsafe(48))"
-o `.env`. Do not share or commit `.env`.
+Copy the printed value into `.env` as `SECRET_KEY`. Do not share or commit `.env`.
 
 Start the application:
 
@@ -56,6 +57,8 @@ Open <http://127.0.0.1:5000>. Keep the PowerShell window open while using the ap
 - The built-in **AI Call Coach** prepares permission-first call guides, call-note checklists, and clearly labeled fictional practice role-plays. For a real lead, it requires recorded contact permission, its source, and date, and shares only that lead's limited business summary with Gemini. Fictional practice sends no CRM lead data. It cannot place, record, listen to, or contact people; live phone-service integration is not configured. Obtain any required consent, verify resort facts, and make calls yourself.
 - Quick AI tools remain available for daily plans, lead prioritization, and single-lead strategy. AI responses are suggestions only and are not a substitute for verified resort information, permission, or human approval.
 - **Event Experience Studio** creates a reviewable event concept, experience ideas, draft agenda, planning checklist, and prospect discovery questions from an active lead and the stated event goal. Gemini receives limited company/business context plus the event details; contact details, CRM notes, website content, and communication history are excluded. Only non-empty resort facts configured in `resort_info.json` are passed as business-supplied facts; the current file has blank commercial details. The output is not saved or sent and is not a quote, availability check, or booking. Confirm resort facilities, capacity, prices, taxes, meals, availability, and terms directly before sharing.
+- **JARVIS command center** gives the existing dashboard a responsive dark holographic interface with a real-data CRM summary, recent agent-task history, pending draft-review count, and an authenticated chat endpoint. Pipeline, follow-up, and research quick commands read SQLite directly. Open-ended AI questions use aggregate CRM metrics plus up to four recent chat turns for conversational context; do not include contact details, private notes, or secrets. This data is sent to the selected provider. Chat history is limited to the browser tab's session storage and can be cleared from the interface. The assistant never changes CRM records or sends messages. Optional Ollama support is enabled by setting `OLLAMA_MODEL` in the private `.env`; requests are restricted to the configured loopback endpoint. Gemini remains supported. Provider availability is not claimed until a request succeeds.
+- Optional browser voice input requires an explicit click and browser permission. Recognized speech stays editable in the text field before submission; audio is not stored by the app. Spoken responses are opt-in, and text chat remains available when browser voice features are unsupported.
 - A daily scheduled CRM metrics report while `app.py` is running. The schedule defaults to 18:00 Asia/Kolkata and is configurable in `.env`.
 - Health endpoint: <http://127.0.0.1:5000/health>.
 - Optional local password login and CSRF protection for form actions.
@@ -107,3 +110,15 @@ python -m unittest discover -s tests -v
 ```
 
 Tests use a temporary database and do not modify the main company records.
+
+## 8. Publish online for your team with Render
+
+The repository includes a `render.yaml` Blueprint for deploying this Flask app from GitHub. It configures a persistent disk for the SQLite database, a generated session secret, a required app password, and one web worker so scheduled jobs run only once. Persistent disks require a Render service plan that supports disks.
+
+1. Commit and push the deployment files to your private GitHub repository: `render.yaml`, `wsgi.py`, `app.py`, and `requirements.txt`.
+2. Sign in to Render, create a **New + → Blueprint**, and authorize Render to access your private GitHub repository. Select `Shivraj46sr/White-Petals-Resort` and the branch you pushed.
+3. Apply the Blueprint. Enter a strong, unique value when prompted for `APP_PASSWORD`. Render generates `SECRET_KEY`; keep it private and persistent. Do not disable the password or share it publicly.
+4. Wait for the deployment to finish. Render will show the app URL (for example, `https://white-petals-resort.onrender.com`). Share that URL and the app password only with your team.
+5. The local SQLite database is not uploaded to GitHub and is not copied automatically. Before deployment, download a database backup from **Setup & backups** in the local app. After deployment, sign in to the hosted app and use **Setup & backups → Restore** to upload that backup if you want the hosted app to start with your existing CRM data.
+
+Keep the persistent disk attached to the service; removing it can delete hosted CRM data. Download backups regularly and store them securely. Everyone currently signs in with the same app password, so share it only with trusted teammates. The repository being private does not make the deployed website private; the app password protects access.

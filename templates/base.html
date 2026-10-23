@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f6f5f0">
+  <meta name="theme-color" content="#07111d">
   <title>{% block title %}White Petals Business Development{% endblock %}</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v=2) }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v=4) }}">
 </head>
-<body>
+<body class="jarvis-theme">
   <div class="app-shell">
     <aside class="sidebar">
       <a class="brand" href="{{ url_for('index') }}">
@@ -40,7 +40,7 @@
       <header class="topbar">
         <div class="mobile-brand"><span class="brand-mark">WP</span><strong>White Petals</strong></div>
         <div class="breadcrumb">BUSINESS DEVELOPMENT <span>/</span> {{ request.endpoint|replace('_', ' ')|default('workspace', true)|title }}</div>
-        <div class="topbar-status"><span class="status-dot"></span> LOCAL CRM</div>
+        <div class="topbar-status">JARVIS INTERFACE</div>
       </header>
       <main class="page">
         {% with messages = get_flashed_messages(with_categories=true) %}

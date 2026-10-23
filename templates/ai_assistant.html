@@ -49,7 +49,7 @@
     <article class="agent-card">
       <p class="eyebrow">{% if agent.is_builtin %}SPECIALIST{% else %}CUSTOM AGENT{% endif %}</p>
       <h3>{{ agent.name }}</h3><p class="muted">{{ agent.specialty }}</p>
-      <details><summary>Agent guidance</summary><p>{{ agent.instructions }}</p></details>
+      <details open><summary>Agent guidance</summary><p>{{ agent.instructions }}</p></details>
       <form method="post" action="{{ url_for('assign_business_agent_task', agent_id=agent.id) }}" class="stack agent-form">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         {% if agent.name == 'AI Call Coach' %}
@@ -82,7 +82,7 @@
   </tbody></table></div>
   {% else %}<div class="empty">No agent work assigned yet. Choose a specialist above to give your first assignment.</div>{% endif %}
 </section>
-<details class="panel">
+<details class="panel" open>
   <summary><strong>Quick AI tools</strong> · daily plan, priorities, and lead strategy</summary>
 <section class="two-columns">
   <article class="panel stack">
